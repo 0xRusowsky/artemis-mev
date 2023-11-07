@@ -1,4 +1,4 @@
-use tokio::sync::broadcast::{self, Sender};
+use tokio::sync::broadcast::{error::RecvError, self, Sender};
 use tokio::task::JoinSet;
 use tokio_stream::StreamExt;
 use tracing::{error, info};
@@ -90,8 +90,12 @@ where
                     match receiver.recv().await {
                         Ok(action) => match executor.execute(action).await {
                             Ok(_) => {}
-                            Err(e) => error!("error executing action: {}", e),
-                        },
+                            Err(e) => panic!("error executing action: {}", e),
+                        }
+                        Err(RecvError::Closed) => {
+                            // We panic here to have the engine crash which will trigger a restart
+                            panic!("action channel closed");
+                        }
                         Err(e) => error!("error receiving action: {}", e),
                     }
                 }
@@ -115,6 +119,10 @@ where
                                     Err(e) => error!("error sending action: {}", e),
                                 }
                             }
+                        }
+                        Err(RecvError::Closed) => {
+                            // We panic here to have the engine crash which will trigger a restart
+                            panic!("event channel closed");
                         }
                         Err(e) => error!("error receiving event: {}", e),
                     }
