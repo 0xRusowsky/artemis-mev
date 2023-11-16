@@ -1,7 +1,7 @@
 use tokio::sync::broadcast::{error::RecvError, self, Sender};
 use tokio::task::JoinSet;
 use tokio_stream::StreamExt;
-use tracing::{error, info};
+use tracing::info;
 
 use crate::types::{Collector, Executor, Strategy};
 
@@ -96,7 +96,7 @@ where
                             // We panic here to have the engine crash which will trigger a restart
                             panic!("action channel closed");
                         }
-                        Err(e) => error!("error receiving action: {}", e),
+                        Err(e) => panic!("error receiving action: {}", e),
                     }
                 }
             });
@@ -116,7 +116,7 @@ where
                             for action in strategy.process_event(event).await {
                                 match action_sender.send(action) {
                                     Ok(_) => {}
-                                    Err(e) => error!("error sending action: {}", e),
+                                    Err(e) => panic!("error sending action: {}", e),
                                 }
                             }
                         }
@@ -124,7 +124,7 @@ where
                             // We panic here to have the engine crash which will trigger a restart
                             panic!("event channel closed");
                         }
-                        Err(e) => error!("error receiving event: {}", e),
+                        Err(e) => panic!("error receiving event: {}", e),
                     }
                 }
             });
@@ -139,7 +139,7 @@ where
                 while let Some(event) = event_stream.next().await {
                     match event_sender.send(event) {
                         Ok(_) => {}
-                        Err(e) => error!("error sending event: {}", e),
+                        Err(e) => panic!("error sending event: {}", e),
                     }
                 }
             });
